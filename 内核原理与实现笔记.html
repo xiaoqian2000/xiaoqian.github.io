@@ -1,0 +1,162 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>内核原理与实现笔记 | 小乾的博客</title><meta name="author" content="PCHER"><meta name="copyright" content="PCHER"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="内核原理与实现笔记 Lsa   本地安全权威子系统   是lsass.exe进程函数  2.2windows 系统结构 2.2.1 Windows内核结构 2.5.1Windows内核中的对象管理 2.5.4 安全性管理    2.5.2注册表和配置管理器 2.6.1内核加载 2.6.2内核初始化过程 2.6.3建立用户登录会话 3.4.1进程句柄表(131) 表第一层为512,实际上是511个第">
+<meta property="og:type" content="website">
+<meta property="og:title" content="内核原理与实现笔记">
+<meta property="og:url" content="https://xiaoqian2000.github.io/%E5%86%85%E6%A0%B8%E5%8E%9F%E7%90%86%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%AC%94%E8%AE%B0.html">
+<meta property="og:site_name" content="小乾的博客">
+<meta property="og:description" content="内核原理与实现笔记 Lsa   本地安全权威子系统   是lsass.exe进程函数  2.2windows 系统结构 2.2.1 Windows内核结构 2.5.1Windows内核中的对象管理 2.5.4 安全性管理    2.5.2注册表和配置管理器 2.6.1内核加载 2.6.2内核初始化过程 2.6.3建立用户登录会话 3.4.1进程句柄表(131) 表第一层为512,实际上是511个第">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+<meta property="article:published_time" content="2022-03-05T14:34:37.000Z">
+<meta property="article:modified_time" content="2022-03-05T15:39:36.411Z">
+<meta property="article:author" content="PCHER">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://xiaoqian2000.github.io/%E5%86%85%E6%A0%B8%E5%8E%9F%E7%90%86%E4%B8%8E%E5%AE%9E%E7%8E%B0%E7%AC%94%E8%AE%B0"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery@2/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery@2/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '内核原理与实现笔记',
+  isPost: false,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: false,
+  postUpdate: '2022-03-05 23:39:36'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.0.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data is-center"><div class="data-item"><a href="/archives/"><div class="headline">文章</div><div class="length-num">0</div></a></div><div class="data-item"><a href="/tags/"><div class="headline">标签</div><div class="length-num">0</div></a></div><div class="data-item"><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div></div><hr/></div></div><div class="page" id="body-wrap"><header class="not-home-page" id="page-header"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">小乾的博客</a></span><div id="menus"><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="page-site-info"><h1 id="site-title">内核原理与实现笔记</h1></div></header><main class="layout" id="content-inner"><div id="page"><div id="article-container"><h1 id="内核原理与实现笔记"><a href="#内核原理与实现笔记" class="headerlink" title="内核原理与实现笔记"></a>内核原理与实现笔记</h1><p><img src="D:\blogsnote\source\笔记图片\函数前缀.png"></p>
+<p>Lsa   本地安全权威子系统   是lsass.exe进程函数</p>
+<p><img src="D:\blogsnote\source\笔记图片\wrk目录结构.png"></p>
+<h4 id="2-2windows-系统结构"><a href="#2-2windows-系统结构" class="headerlink" title="2.2windows 系统结构"></a>2.2windows 系统结构</h4><p><img src="D:\blogsnote\source\笔记图片\window系统结构.png"></p>
+<h4 id="2-2-1-Windows内核结构"><a href="#2-2-1-Windows内核结构" class="headerlink" title="2.2.1 Windows内核结构"></a>2.2.1 Windows内核结构</h4><p><img src="D:\blogsnote\source\笔记图片\window内核结构.png"></p>
+<h4 id="2-5-1Windows内核中的对象管理"><a href="#2-5-1Windows内核中的对象管理" class="headerlink" title="2.5.1Windows内核中的对象管理"></a>2.5.1Windows内核中的对象管理</h4><p><img src="D:\blogsnote\source\笔记图片\全局对象管理.png"></p>
+<h4 id="2-5-4-安全性管理"><a href="#2-5-4-安全性管理" class="headerlink" title="2.5.4 安全性管理"></a>2.5.4 安全性管理</h4><p><img src="/%E5%AF%B9%E8%B1%A1%E6%A3%80%E6%9F%A5-16464946694383.png"></p>
+<p><img src="/%E7%89%B9%E6%9D%83%E6%A3%80%E6%9F%A5-16464946755924.png"></p>
+<p><img src="D:\blogsnote\source\笔记图片\特权级.png" alt="特权级"></p>
+<p><img src="D:\blogsnote\source\笔记图片\特权2.png" alt="特权2"></p>
+<h4 id="2-5-2注册表和配置管理器"><a href="#2-5-2注册表和配置管理器" class="headerlink" title="2.5.2注册表和配置管理器"></a>2.5.2注册表和配置管理器</h4><p><img src="D:\blogsnote\source\笔记图片\注册表.png"></p>
+<h4 id="2-6-1内核加载"><a href="#2-6-1内核加载" class="headerlink" title="2.6.1内核加载"></a>2.6.1内核加载</h4><p><img src="D:\blogsnote\source\笔记图片\内核初始化2.6.1.png"></p>
+<h4 id="2-6-2内核初始化过程"><a href="#2-6-2内核初始化过程" class="headerlink" title="2.6.2内核初始化过程"></a>2.6.2内核初始化过程</h4><p><img src="D:\blogsnote\source\笔记图片\内核初始化2.6.2.png"></p>
+<h4 id="2-6-3建立用户登录会话"><a href="#2-6-3建立用户登录会话" class="headerlink" title="2.6.3建立用户登录会话"></a>2.6.3建立用户登录会话</h4><p><img src="D:\blogsnote\source\笔记图片\smss启动过程.png"></p>
+<h4 id="3-4-1进程句柄表-131"><a href="#3-4-1进程句柄表-131" class="headerlink" title="3.4.1进程句柄表(131)"></a>3.4.1进程句柄表(131)</h4><p><img src="/%E5%8F%A5%E6%9F%84%E8%A1%A8.png"></p>
+<p>表第一层为512,实际上是511个第一个有特殊用途.</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">只是一部分成员的偏移变化了，要注意的是表示对象地址的成员移到了 ObjectPointerBits 上，长度为 44 位的数据。</span><br><span class="line">Win10上内核对象的地址算法：</span><br><span class="line">Object = Entry-&gt;ObjectPointerBits;</span><br><span class="line">Object &lt;&lt;= 4;</span><br><span class="line">Object |= 0xFFFF000000000000;</span><br><span class="line">Object += 0x30</span><br><span class="line">另外对象权限也变到了 GrantedAccessBits 成员中，长度为 25 位的数据。</span><br></pre></td></tr></table></figure>
+
+</div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">PCHER</div><div class="author-info__description"></div></div><div class="card-info-data is-center"><div class="card-info-data-item"><a href="/archives/"><div class="headline">文章</div><div class="length-num">0</div></a></div><div class="card-info-data-item"><a href="/tags/"><div class="headline">标签</div><div class="length-num">0</div></a></div><div class="card-info-data-item"><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/xxxxxx"><i class="fab fa-github"></i><span>Follow Me</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">This is my Blog</div></div><div class="sticky_layout"><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"></div></div><div class="card-widget card-archives"></div><div class="card-widget card-webinfo"><div class="item-headline"><i class="fas fa-chart-line"></i><span>网站资讯</span></div><div class="webinfo"><div class="webinfo-item"><div class="item-name">文章数目 :</div><div class="item-count">0</div></div><div class="webinfo-item"><div class="item-name">本站访客数 :</div><div class="item-count" id="busuanzi_value_site_uv"></div></div><div class="webinfo-item"><div class="item-name">本站总访问量 :</div><div class="item-count" id="busuanzi_value_site_pv"></div></div><div class="webinfo-item"><div class="item-name">最后更新时间 :</div><div class="item-count" id="last-push-date" data-lastPushDate="2022-03-05T15:42:26.458Z"></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2020 - 2022 By PCHER</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button id="go-up" type="button" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.js"></script><div class="js-pjax"></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
